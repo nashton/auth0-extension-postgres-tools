@@ -138,7 +138,18 @@ export class PostgresRecordProvider {
       throw ex;
     }
 
-    await this.pool.query(`CREATE TABLE ${collectionName} (ID serial NOT NULL PRIMARY KEY, _id uuid NOT NULL UNIQUE, json jsonb NOT NULL)`);
+    try {
+      await this.pool.query(`CREATE TABLE IF NOT EXISTS ${collectionName} (ID serial NOT NULL PRIMARY KEY, _id uuid NOT NULL UNIQUE, json jsonb NOT NULL)`);
+    } catch (ex) {
+      // Postgres create table command does not handle concurrency well and a race condition could happen.
+      // This manifests as error 23505 which we therefore can safely ignore
+      // https://www.postgresql.org/message-id/CA%2BTgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg%40mail.gmail.com
+      if(ex.code === '23505') {
+        console.warn(`Possible race condition error on creation of table ${collectionName}. It should be safe to continue.`)
+      } else {
+        throw ex;
+      }
+    }
     return query();
   }
 
