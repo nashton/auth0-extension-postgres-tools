@@ -103,6 +103,25 @@ export class PostgresRecordProvider {
   }
 
   /**
+   * Get all roles and groups associated with user
+   * @param userId ID of the user
+   * @returns JSON object with a groups and a roles array
+   */
+  public async getUserData(userId: string) {
+    const groups = await this.pool.query(`SELECT json ->> '_id' AS id, json ->> 'name' AS name FROM groups WHERE json ->> 'members' LIKE '%${userId}%'`);
+    const roles = await this.pool.query(`SELECT json ->> 'name' AS role FROM roles WHERE json ->> 'users' LIKE '%${userId}%'`);
+    // TODO: Add permissions. Get permission IDs from roles const and lookup permission names in permissions table
+
+    return {
+      groups: groups.rows.map(row => { return {
+        _id: row.id,
+        name: row.name
+      }}),
+      roles: roles.rows.map(row => row.role)
+    };
+  }
+
+  /**
    * Delete a record in a collection.
    * @param collectionName The name of the collection.
    * @param identifier The identifier of the record to update.
