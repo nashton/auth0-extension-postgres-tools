@@ -108,16 +108,26 @@ export class PostgresRecordProvider {
    * @returns JSON object with a groups and a roles array
    */
   public async getUserData(userId: string) {
-    const groups = await this.pool.query(`SELECT json ->> '_id' AS id, json ->> 'name' AS name FROM groups WHERE json ->> 'members' LIKE '%${userId}%'`);
-    const roles = await this.pool.query(`SELECT json ->> 'name' AS role FROM roles WHERE json ->> 'users' LIKE '%${userId}%'`);
-    // TODO: Add permissions. Get permission IDs from roles const and lookup permission names in permissions table
+    const groups = await this.pool.query(`SELECT json ->> '_id' AS id, json ->> 'name' AS name, json ->> 'roles' as roles FROM groups WHERE json->'members' @> $1`, [`"${userId}"`]);
+
+    // get roles id
+    const rolesIds = groups.rows.map(row => JSON.parse(row.roles) as string[])
+      .reduce((prev, cur) => prev.concat(cur), [] as string[]); // Flatten array of arrays to one array with ids
+
+    const roles = await this.pool.query(`SELECT json ->> 'name' AS role, json ->> 'permissions' AS permissions FROM roles WHERE json->'users' @> $1 OR _id = ANY ($2)`, [`"${userId}"`, rolesIds]);
+
+    const permissionIds = roles.rows.map(row => JSON.parse(row.permissions) as string[])
+      .reduce((prev, cur) => prev.concat(cur), [] as string[]); // Flatten array of arrays to one array with ids
+
+    const permissions = await this.pool.query(`SELECT json ->> 'name' AS name FROM permissions WHERE _id = ANY ($1)`, [permissionIds]);
 
     return {
       groups: groups.rows.map(row => { return {
         _id: row.id,
         name: row.name
       }}),
-      roles: roles.rows.map(row => row.role)
+      roles: roles.rows.map(row => row.role),
+      permissions: permissions.rows.map(row => row.name)
     };
   }
 

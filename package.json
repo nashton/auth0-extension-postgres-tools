@@ -1,6 +1,6 @@
 {
   "name": "@boligportal/auth0-extension-postgres-tools",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A set of tools and utilities to simplify the development of Auth0 Extensions with Postgres.",
   "main": "build/index.js",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "url": "git+https://github.com/nashton/auth0-extension-postgres-tools.git"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "develop": "tsc -w"
   },
   "dependencies": {
     "@types/node-uuid": "^0.0.28",
@@ -24,6 +25,7 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@types/pg": "^7.4.10"
+    "@types/pg": "^7.4.10",
+    "typescript": "^3.5.3"
   }
 }
